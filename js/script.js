@@ -24,10 +24,42 @@ var currentLocation = {
 };
 
 /**
+ * #11 initialize app when the DOM is ready
+ */
+
+$(function () {
+	 listChannels(compareNew); 
+	 loadEmojis();	 
+	 var intervalID = setInterval(function() {
+		 console.log("Updating message elements...");
+		 $.each(currentChannel.messages, function(i, val) {
+			 console.log(val);
+			 console.log(currentChannel.messages)
+			 if (val.update() == -1) {
+				 currentChannel.messages.splice(i, 1);				 
+				 currentChannel.messageCount -= 1;
+				 
+			 };
+			 /*var timeLeftString = val.messageElement.find('em').text();
+			 var index = timeLeftString.indexOf(" min.");
+			 var timeLeft = timeLeftString.slice(0, index);
+			 timeLeft -= 1/6;
+			 var rounded = Math.round(timeLeft * 10)/10;
+			 console.log(timeLeft);
+			 console.log(rounded);
+			 val.messageElement.find('em').text(rounded + ' min. left');*/
+		});
+	 },10000);
+	 console.log("App is initialized");
+ });
+
+/**
  * Switch channels name in the right app bar
  * @param channelObject
  */
-function switchChannel(channelObject) {
+ 
+ // # 11 highlight selected channel
+function switchChannel(channelObject, channelElement) {
     // Log the channel switch
     console.log("Tuning in to channel", channelObject);
 
@@ -52,10 +84,13 @@ function switchChannel(channelObject) {
     /* highlight the selected #channel.
        This is inefficient (jQuery has to search all channel list items), but we'll change it later on */
     $('#channels li').removeClass('selected');
-    $('#channels li:contains(' + channelObject.name + ')').addClass('selected');
+    $(channelElement).addClass('selected');
 
     /* store selected channel in global variable */
     currentChannel = channelObject;
+	// #11 show messages for selected channel
+	$('#messages').empty();
+	showMessages();
 }
 
 /* liking a channel on #click */
@@ -126,6 +161,27 @@ function Message(text) {
     this.text = text;
     // own message
     this.own = true;
+	// #11 remaining time is updated
+	this.update = function() {
+			 var timeLeftString = this.messageElement.find('em').text();
+			 var index = timeLeftString.indexOf(" min.");
+			 var timeLeft = timeLeftString.slice(0, index);
+			 timeLeft -= 5//1/6;
+			 var rounded = Math.round(timeLeft * 10)/10;
+			 if (timeLeft < 0) {
+				 this.messageElement.remove();
+				 return -1;
+			 } else if (timeLeft < 5) {   // text in primary color if time left is less than 5 min
+				this.messageElement.find('em').text(rounded + ' min. left').css("color","#3F51B5");
+			 }
+			else{
+				this.messageElement.find('em').text(rounded + ' min. left');	 
+			 };
+			console.log(timeLeft);
+			console.log(rounded);
+			
+		}
+	
 }
 
 function sendMessage() {
@@ -151,6 +207,16 @@ function sendMessage() {
 
     // Adding the message to the messages-div
     $('#messages').append(createMessageElement(message));
+	
+	// #11 register an event listener for all +5 min buttons
+	 $('.message button').click(function() {
+		 var timeStr = $(this).parent().find('em').text();
+		 var endingIndex = timeStr.indexOf(" min.");
+		 var time = Number(timeStr.slice(0, endingIndex));
+		 time += 5;
+		 $(this).parent().find('em').text(time + " min. left");
+	 });
+		
 
     // messages will scroll to a certain point if we apply a certain height, in this case the overall scrollHeight of the messages-div that increases with every message;
     $('#messages').scrollTop($('#messages').prop('scrollHeight'));
@@ -167,9 +233,19 @@ function sendMessage() {
 function createMessageElement(messageObject) {
     // Calculating the expiresIn-time from the expiresOn-property
     var expiresIn = Math.round((messageObject.expiresOn - Date.now()) / 1000 / 60);
-
+	// #11 create <div> as a jQuery object
+	divElement = $('<div>').addClass("message");
+	messageObject.own ? divElement.addClass(' own') : divElement.addClass('')
+	divElement.html('<h3><a href="http://w3w.co/' + messageObject.createdBy + '" target="_blank">'+
+        '<strong>' + messageObject.createdBy + '</strong></a>' +
+        messageObject.createdOn.toLocaleString() +
+        '<em>' + expiresIn + ' min. left</em></h3>' +
+        '<p>' + messageObject.text + '</p>' +
+        '<button class="accent">+5 min.</button>');
+	messageObject.messageElement = divElement;
     // Creating a message-element
-    return '<div class="message'+
+    return divElement;
+	/*'<div class="message'+
         //this dynamically adds #own to the #message, based on the
         //ternary operator. We need () in order not to disrupt the return.
         (messageObject.own ? ' own' : '') +
@@ -180,7 +256,7 @@ function createMessageElement(messageObject) {
         '<em>' + expiresIn + ' min. left</em></h3>' +
         '<p>' + messageObject.text + '</p>' +
         '<button class="accent">+5 min.</button>' +
-        '</div>';
+        '</div>'; */
 }
 
 /* #10 Three #compare functions to #sort channels */
@@ -215,16 +291,28 @@ function compareFavorites(channelA, channelB) {
 }
 
 function listChannels(criterion) {
+	
     // #10 #sorting: #sort channels#array by the criterion #parameter
     channels.sort(criterion);
-
+	
     // #10 #sorting #duplicate: empty list
     $('#channels ul').empty();
-
+	
     /* #10 append channels from #array with a #for loop */
+	
+	var lengthOfName = currentChannel.name.length
     for (i = 0; i < channels.length; i++) {
-        $('#channels ul').append(createChannelElement(channels[i]));
-    };
+		$('#channels ul').append(createChannelElement(channels[i]))
+		}
+	
+	/* #11 highlight current channel */	
+	
+	var channelLength = currentChannel.name.length;
+	$('li').each(function() {
+		if ($(this).text().slice(0, channelLength) == currentChannel.name) {
+			$(this).addClass('selected');
+		}
+	});
 }
 
 /**
@@ -324,7 +412,14 @@ function createChannelElement(channelObject) {
 
     // The chevron
     $('<i>').addClass('fa').addClass('fa-chevron-right').appendTo(meta);
-
+	
+	// #11 add click listener 
+	$(channel).click(function() {
+		var clickedChannel = $(this);
+		//console.log(this);
+		switchChannel(channelObject, clickedChannel);
+	});
+	
     // return the complete channel
     return channel;
 }
@@ -355,3 +450,28 @@ function abortCreationMode() {
     $('#button-create').hide();
     $('#button-send').show();
 }
+
+/**
+ * #11 Show messages that belong to the selected channel
+ */
+ 
+function showMessages() {
+	$.each(currentChannel.messages, function(i, val) {
+		//console.log(val);
+		createMessageElement(val);
+		$('#messages').append(createMessageElement(val));
+		$('#messages').scrollTop($('#messages').prop('scrollHeight'));
+	});
+
+	
+	/*for (message of currentChannel.messages) {
+		//console.log(message);
+		createMessageElement(message);
+	}*/
+}
+
+
+ 
+ 
+ 
+	 
