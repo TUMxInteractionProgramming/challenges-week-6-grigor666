@@ -27,14 +27,12 @@ var currentLocation = {
  * #11 initialize app when the DOM is ready
  */
 
-$(function () {
+$().ready(function () {
 	 listChannels(compareNew); 
 	 loadEmojis();	 
 	 var intervalID = setInterval(function() {
 		 console.log("Updating message elements...");
-		 $.each(currentChannel.messages, function(i, val) {
-			 console.log(val);
-			 console.log(currentChannel.messages)
+		 $.each(currentChannel.messages, function(i, val) {			 
 			 if (val.update() == -1) {
 				 currentChannel.messages.splice(i, 1);				 
 				 currentChannel.messageCount -= 1;
@@ -166,7 +164,7 @@ function Message(text) {
 			 var timeLeftString = this.messageElement.find('em').text();
 			 var index = timeLeftString.indexOf(" min.");
 			 var timeLeft = timeLeftString.slice(0, index);
-			 timeLeft -= 5//1/6;
+			 timeLeft -= 1/6;
 			 var rounded = Math.round(timeLeft * 10)/10;
 			 if (timeLeft < 0) {
 				 this.messageElement.remove();
@@ -177,8 +175,7 @@ function Message(text) {
 			else{
 				this.messageElement.find('em').text(rounded + ' min. left');	 
 			 };
-			console.log(timeLeft);
-			console.log(rounded);
+			
 			
 		}
 	
