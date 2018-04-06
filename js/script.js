@@ -304,12 +304,12 @@ function listChannels(criterion) {
 	
 	/* #11 highlight current channel */	
 	
-	var channelLength = currentChannel.name.length;
+	/*var channelLength = currentChannel.name.length;
 	$('li').each(function() {
 		if ($(this).text().slice(0, channelLength) == currentChannel.name) {
 			$(this).addClass('selected');
 		}
-	});
+	});*/
 }
 
 /**
